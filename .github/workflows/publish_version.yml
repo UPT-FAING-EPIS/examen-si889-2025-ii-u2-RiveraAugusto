@@ -29,8 +29,10 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Restore
-        run: dotnet restore
+      - name: Restore proyectos
+        run: |
+          dotnet restore src/AccessControl/AccessControl.csproj
+          dotnet restore tests/AccessControl.Tests/AccessControl.Tests.csproj
 
       - name: Build
         run: dotnet build src/AccessControl/AccessControl.csproj --configuration Release --no-restore
