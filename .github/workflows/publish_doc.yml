@@ -1,0 +1,84 @@
+name: Publicar documentación y diagrama de clases
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Generar documentación y diagrama
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Doxygen y Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Generar Doxyfile si no existe
+        run: |
+          if [ ! -f Doxyfile ]; then
+            doxygen -g Doxyfile
+          fi
+
+      - name: Configurar Doxygen (HTML y diagramas de clases)
+        run: |
+          {
+            echo "# --- Overrides para GitHub Actions ---"
+            echo "OUTPUT_DIRECTORY = site"
+            echo "GENERATE_HTML = YES"
+            echo "RECURSIVE = YES"
+            echo "EXTRACT_ALL = YES"
+            echo "FILE_PATTERNS = *.cs"
+            echo "HAVE_DOT = YES"
+            echo "CLASS_DIAGRAMS = YES"
+            echo "CALL_GRAPH = YES"
+            echo "COLLABORATION_GRAPH = YES"
+            echo "TEMPLATE_RELATIONS = YES"
+            echo "DOT_IMAGE_FORMAT = svg"
+            echo "DOT_GRAPH_MAX_NODES = 250"
+            echo "GENERATE_TREEVIEW = YES"
+            echo "QUIET = YES"
+          } >> Doxyfile
+          if [ -d src ]; then
+            echo "INPUT = src" >> Doxyfile
+          else
+            echo "INPUT = ." >> Doxyfile
+          fi
+
+      - name: Ejecutar Doxygen (genera documentación y diagramas)
+        run: doxygen Doxyfile
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir artefacto para Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/html
+
+  deploy:
+    name: Publicar en GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
