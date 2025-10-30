@@ -37,6 +37,9 @@ jobs:
       - name: Build
         run: dotnet build src/AccessControl/AccessControl.csproj --configuration Release --no-restore
 
+      - name: Build tests
+        run: dotnet build tests/AccessControl.Tests/AccessControl.Tests.csproj --configuration Release --no-restore
+
       - name: Test con cobertura
         run: dotnet test tests/AccessControl.Tests/AccessControl.Tests.csproj --configuration Release --no-build --collect "XPlat Code Coverage"
 
